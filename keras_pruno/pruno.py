@@ -8,23 +8,23 @@ def pruno_random_channels_first(similarity, seed, inputs_flat, actual_batchsize,
     fmap_even = (fmap_count//2)*2
     flatshape = (-1, fmap_count, fmap_size)
     gam = tf.math.reduce_mean(inputs_flat, axis=-1, keepdims=True)
-    live = tf.cast(inputs_flat[:, :, :] > gam[:, :, :], dtype='float32')
+    live = tf.cast(inputs_flat[:, :, :] > gam[:, :, :], dtype='float32', name='live')
     indices = tf.constant(np.arange(fmap_count), dtype='int32')
     random_indices = tf.random.shuffle(indices, seed=seed)
     mult_list = []
     for fm in range(0, fmap_even, 2):
         mult_list.append(live[:, random_indices[fm], :] * live[:, random_indices[fm + 1], :])
-    mult = tf.stack(mult_list, axis=1)
-    percent = tf.math.reduce_sum(mult, axis=-1, keepdims=True) / flatshape[2]
-    mask = tf.cast(percent < similarity, dtype='float32')
-    mask_unstack = tf.unstack(mask, axis=1)
+    mult = tf.stack(mult_list, axis=1, name='stack1')
+    percent = tf.math.reduce_sum(mult, axis=-1, keepdims=True, name='percent') / flatshape[2]
+    mask = tf.cast(percent < similarity, dtype='float32', name='mask')
+    mask_unstack = tf.unstack(mask, axis=1, name='unstack1')
     mask_list = []
     for i in range(fmap_even // 2):
         mask_list.append(mask_unstack[i])
         mask_list.append(mask_unstack[i])
     if fmap_count > fmap_even:
         mask_list.append(tf.ones_like(mask_unstack[0], dtype='float32'))
-    dup_mask = tf.stack(mask_list, axis=1)
+    dup_mask = tf.stack(mask_list, axis=1, name='stack2')
     tiled_indices_flat = tf.tile(random_indices, actual_batchsize)
     tiled_indices = tf.reshape(tiled_indices_flat, (-1, flatshape[1], 1))
     inverse_mask_flat = tf.gather(dup_mask, tiled_indices, batch_dims=1, axis=1)
