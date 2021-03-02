@@ -4,7 +4,7 @@ from tensorflow.python.framework import smart_cond
 
 import numpy as np
 
-def pruno_flat_channels_first(similarity, seed, inputs_flat, actual_batchsize, fmap_count, fmap_size):
+def pruno_random_channels_first(similarity, seed, inputs_flat, actual_batchsize, fmap_count, fmap_size):
     fmap_even = (fmap_count//2)*2
     flatshape = (-1, fmap_count, fmap_size)
     gam = tf.math.reduce_mean(inputs_flat, axis=-1, keepdims=True)
@@ -31,7 +31,7 @@ def pruno_flat_channels_first(similarity, seed, inputs_flat, actual_batchsize, f
     inverse_mask = tf.reshape(inverse_mask_flat, (-1, fmap_count, 1))
     return inputs_flat * inverse_mask
 
-def pruno_flat_channels_last(similarity, seed, inputs_flat, actual_batchsize, fmap_count, fmap_size):
+def pruno_random_channels_last(similarity, seed, inputs_flat, actual_batchsize, fmap_count, fmap_size):
     fmap_even = (fmap_count//2)*2
     flatshape = (-1, fmap_size, fmap_count)
     gam = tf.math.reduce_mean(inputs_flat, axis=1, keepdims=True)
