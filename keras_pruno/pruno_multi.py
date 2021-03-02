@@ -38,6 +38,7 @@ def pruno_multi_channels_first(similarity, inputs_flat, actual_batchsize, fmap_c
     return inputs_flat * reduce_mask
 
 def pruno_multi_channels_last(similarity, inputs_flat, actual_batchsize, fmap_count, fmap_size):
+    print('pruno_multi_channels_last:', similarity, inputs_flat, actual_batchsize, fmap_count, fmap_size)
     flatshape = (-1, fmap_size, fmap_count)
     fmap_mean = tf.math.reduce_mean(inputs_flat, axis=1, keepdims=True)
     live = tf.cast(inputs_flat[:, :, :] > fmap_mean[:, :, :], dtype='float32')
@@ -62,11 +63,11 @@ def pruno_multi_channels_last(similarity, inputs_flat, actual_batchsize, fmap_co
     counter = 0
     for fm_x in range(fmap_count):
         for fm_y in range(fm_x+1, fmap_count):
-            print('x, y, counter:', fm_x, fm_y, counter)
             mask_cell = mask_unstack[counter]
             reduce_list[fm_x].append(mask_cell)
             reduce_list[fm_y].append(mask_cell)
             counter += 1
+    print('Final: x, y, counter:', fm_x, fm_y, counter)
     for i in range(fmap_count):
         for r in range(len(reduce_list[i]), fmap_count):
             one = tf.ones_like(reduce_list[0][0])
