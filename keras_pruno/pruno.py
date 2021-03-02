@@ -130,8 +130,8 @@ class Pruno2D(tf.keras.layers.Layer):
   
         def dropped_inputs():
             actual_batchsize = tf.shape(inputs)[0:1]
-            input_shape = (-1, self.fmap_count, self.fmap_shape[0], self.fmap_shape[1])
-            flatshape = (-1, self.fmap_count, self.fmap_shape[0] * self.fmap_shape[1])
+            input_shape = (-1, self.fmap_shape[0], self.fmap_shape[1], self.fmap_count)
+            flatshape = (-1, self.fmap_shape[0] * self.fmap_shape[1], self.fmap_count)
             inputs_flatmap = tf.reshape(inputs, flatshape)
             outputs_flat = pruno_random_channels_last(self.similarity, self.seed, inputs_flatmap, actual_batchsize, 
                                  self.fmap_count, self.fmap_shape[0] * self.fmap_shape[1])
