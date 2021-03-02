@@ -169,8 +169,7 @@ class Pruno2DMulti(tf.keras.layers.Layer):
 
   def get_config(self):
     config = {
-        'similarity': self.similarity,
-        'seed': self.seed
+        'similarity': self.similarity
     }
     base_config = super(Pruno2DMulti, self).get_config()
     return dict(list(base_config.items()) + list(config.items()))
