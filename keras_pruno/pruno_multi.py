@@ -150,17 +150,17 @@ class Pruno2DMulti(tf.keras.layers.Layer):
     def identity_inputs():
         return inputs
 
-    def dropped_inputs():
+    def dropped_inputs_channels_last():
       actual_batchsize = tf.shape(inputs)[0:1]
-      input_shape = (-1, self.fmap_count, self.fmap_shape[0], self.fmap_shape[1])
-      flatshape = (-1, self.fmap_count, self.fmap_shape[0] * self.fmap_shape[1])
+      input_shape = (-1, self.fmap_shape[0], self.fmap_shape[1], self.fmap_count)
+      flatshape = (-1, self.fmap_shape[0] * self.fmap_shape[1], self.fmap_count)
       inputs_flatmap = tf.reshape(inputs, flatshape)
       outputs_flat = pruno_multi_channels_last(self.similarity, inputs_flatmap, actual_batchsize, 
                                self.fmap_count, self.fmap_shape[0] * self.fmap_shape[1])
       outputs = tf.reshape(outputs_flat, tf.shape(inputs))
       return outputs
 
-    output = smart_cond.smart_cond(training, dropped_inputs,
+    output = smart_cond.smart_cond(training, dropped_inputs_channels_last,
                                           identity_inputs)
     return output
 
