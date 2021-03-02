@@ -79,7 +79,6 @@ def pruno_multi_channels_last(similarity, inputs_flat, actual_batchsize, fmap_co
     reduce_mask = tf.stack(reduce_list, axis=1)
     print('inputs_flat:', inputs_flat)
     reduce_mask = tf.reshape(reduce_mask, (-1, 1, fmap_count))
-    return reduce_mask
     print('reduce_mask:', reduce_mask)
     return inputs_flat * reduce_mask
 
