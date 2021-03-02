@@ -5,7 +5,7 @@ from tensorflow.python.framework import smart_cond
 import numpy as np
 
 
-def pruno_multi(similarity, inputs_flat, actual_batchsize, fmap_count, fmap_size):
+def pruno_multi_channels_first(similarity, inputs_flat, actual_batchsize, fmap_count, fmap_size):
     flatshape = (-1, fmap_count, fmap_size)
     fmap_mean = tf.math.reduce_mean(inputs_flat, axis=-1, keepdims=True)
     live = tf.cast(inputs_flat[:, :, :] > fmap_mean[:, :, :], dtype='float32')
@@ -36,6 +36,52 @@ def pruno_multi(similarity, inputs_flat, actual_batchsize, fmap_count, fmap_size
         reduce_list[i] = tf.math.reduce_min(row, axis=1)
     reduce_mask = tf.stack(reduce_list, axis=1)
     return inputs_flat * reduce_mask
+
+def pruno_multi_channels_last(similarity, inputs_flat, actual_batchsize, fmap_count, fmap_size):
+    flatshape = (-1, fmap_size, fmap_count)
+    fmap_mean = tf.math.reduce_mean(inputs_flat, axis=1, keepdims=True)
+    live = tf.cast(inputs_flat[:, :, :] > fmap_mean[:, :, :], dtype='float32')
+    mult_list = []
+    print('live:', live)
+    for fm_x in range(fmap_count):
+        for fm_y in range(fm_x+1, fmap_count):
+            mult_list.append(live[:, :, fm_x] * live[:, :, fm_y])
+    print('mult_list:', mult_list)
+    mult = tf.stack(mult_list, axis=2)
+    print('mult:', mult)
+    percent = tf.math.reduce_sum(mult, axis=1, keepdims=True) / flatshape[1]
+    print('percent:', percent)
+    mask = tf.cast(percent < similarity, dtype='float32')
+    print('mask:', mask)
+    # return mask
+    mask_unstack = tf.unstack(mask, axis=2)
+    print('mask_unstack:', mask_unstack)
+    reduce_list = [None] * fmap_count
+    for i in range(fmap_count):
+        reduce_list[i] = []
+    counter = 0
+    for fm_x in range(fmap_count):
+        for fm_y in range(fm_x+1, fmap_count):
+            print('x, y, counter:', fm_x, fm_y, counter)
+            mask_cell = mask_unstack[counter]
+            reduce_list[fm_x].append(mask_cell)
+            reduce_list[fm_y].append(mask_cell)
+            counter += 1
+    for i in range(fmap_count):
+        for r in range(len(reduce_list[i]), fmap_count):
+            one = tf.ones_like(reduce_list[0][0])
+            reduce_list[i].append(one)
+    for i in range(fmap_count):
+        row = tf.stack(reduce_list[i], axis=1)
+        reduce_list[i] = tf.math.reduce_min(row, axis=1)
+    print('reduce_list[0]:', reduce_list[0])
+    reduce_mask = tf.stack(reduce_list, axis=1)
+    print('inputs_flat:', inputs_flat)
+    reduce_mask = tf.reshape(reduce_mask, (-1, 1, fmap_count))
+    return reduce_mask
+    print('reduce_mask:', reduce_mask)
+    return inputs_flat * reduce_mask
+
 
 class Pruno2DMulti(tf.keras.layers.Layer):
   """Applies Pruning Dropout to the input.
@@ -109,7 +155,7 @@ class Pruno2DMulti(tf.keras.layers.Layer):
       input_shape = (-1, self.fmap_count, self.fmap_shape[0], self.fmap_shape[1])
       flatshape = (-1, self.fmap_count, self.fmap_shape[0] * self.fmap_shape[1])
       inputs_flatmap = tf.reshape(inputs, flatshape)
-      outputs_flat = pruno_multi(self.similarity, inputs_flatmap, actual_batchsize, 
+      outputs_flat = pruno_multi_channels_last(self.similarity, inputs_flatmap, actual_batchsize, 
                                self.fmap_count, self.fmap_shape[0] * self.fmap_shape[1])
       outputs = tf.reshape(outputs_flat, tf.shape(inputs))
       return outputs
