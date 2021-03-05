@@ -65,29 +65,38 @@ def pruno_random_channels_batchwise(similarity, seed, inputs_flat, actual_batchs
     live = tf.cast(inputs_flat[:, :, :] > gam[:, :, :], dtype='float32')
     indices = tf.constant(np.arange(fmap_count), dtype='int32')
     random_indices = tf.random.shuffle(indices, seed=seed)
+    print('random_indices:', random_indices)
     mult_list = []
     for fm in range(0, fmap_even, 2):
         mult_list.append(live[:, :, random_indices[fm]] * live[:, :, random_indices[fm + 1]])
     mult = tf.stack(mult_list, axis=2)
-    percent = tf.math.reduce_sum(tf.math.reduce_sum(mult, axis=1), axis=0) / \
-        (fmap_size * (tf.cast(actual_batchsize[0], dtype='float32')))
+    percent = tf.math.reduce_sum(mult, axis=1, keepdims=True) / flatshape[1]
     mask = tf.cast(percent < similarity, dtype='float32')
-    mask_unstack = tf.unstack(mask)
+    print('mask:', mask)
+    # return mask
+    mean_mask = tf.cast(tf.math.reduce_mean(mask, axis=0) > 0.50001, dtype='float32')
+    mean_mask = tf.tile(tf.squeeze(mean_mask), actual_batchsize)
+    mean_mask = tf.reshape(mean_mask, (-1, 1, fmap_even // 2))
+    print('mean_mask:', mean_mask)
+    # return mean_mask
+    mask_unstack = tf.unstack(mean_mask, axis=2)
     mask_list = []
     for i in range(fmap_even // 2):
         mask_list.append(mask_unstack[i])
         mask_list.append(mask_unstack[i])
     if fmap_even < fmap_count:
         mask_list.append(tf.ones_like(mask_unstack[0], dtype='float32'))
-    dup_mask = tf.stack(mask_list)
-    ones = tf.ones((actual_batchsize[0], 1, 1), dtype='float32')
-    dup_mask = dup_mask * ones
-    dup_mask = tf.reshape(dup_mask, (-1, fmap_count, 1))
+    dup_mask = tf.stack(mask_list, axis=1)
+    print('dup_mask:', dup_mask)
+    # return dup_mask
     tiled_indices_flat = tf.tile(random_indices, actual_batchsize)
     tiled_indices = tf.reshape(tiled_indices_flat, (-1, 1, fmap_count))
+    print('tiled_indices:', tiled_indices)
+    # return tiled_indices
     inverse_mask_flat = tf.gather(dup_mask, tiled_indices, batch_dims=1, axis=1)
     inverse_mask = tf.reshape(inverse_mask_flat, (-1, 1, fmap_count))
     return inputs_flat * inverse_mask
+
 
 class Pruno2D(tf.keras.layers.Layer):
     """Applies Pruning Dropout to the input.
