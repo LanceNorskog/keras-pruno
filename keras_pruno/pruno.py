@@ -163,9 +163,7 @@ class Pruno2D(tf.keras.layers.Layer):
     def call(self, inputs, training=None):
         if training is None:
             training = K.learning_phase()
-      
-        training = True
-  
+        
         def identity_inputs():
             return inputs
   
