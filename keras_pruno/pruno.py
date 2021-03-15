@@ -97,6 +97,60 @@ def pruno_random_channels_batchwise(similarity, seed, inputs_flat, actual_batchs
     inverse_mask = tf.reshape(inverse_mask_flat, (-1, 1, fmap_count))
     return inputs_flat * inverse_mask
 
+def pruno_random_channels_norm_batchwise(similarity, seed, inputs_flat, actual_batchsize, fmap_count, fmap_size, batchwise):
+    fmap_even = (fmap_count//2)*2
+    flatshape = (-1, fmap_size, fmap_count)
+    indices = tf.constant(np.arange(fmap_count), dtype='int32')
+    random_indices = tf.random.shuffle(indices, seed=seed)
+    print('random_indices:', random_indices)
+    inputs_norm, inputs_norm_sqrt = tf.linalg.normalize(inputs_flat, axis=1)
+    print('inputs_norm:', inputs_norm)
+    # return inputs_norm
+    mult_list = []
+    for fm in range(0, fmap_even, 2):
+        mult_list.append(inputs_norm[:, :, random_indices[fm]] * inputs_norm[:, :, random_indices[fm + 1]])
+    mult = tf.stack(mult_list, axis=2)
+
+    gam = tf.math.reduce_mean(mult, axis=1, keepdims=True)
+    print('gam:', gam)
+    # return gam
+    live = tf.cast(mult[:, :, :] > gam, dtype='float32')
+    print('live:', live)
+    # return live
+    percent = tf.math.reduce_sum(live, axis=1, keepdims=True) / flatshape[1]
+    print('percent:', percent)
+    # return percent
+    mask = tf.cast(percent < similarity, dtype='float32')
+    print('mask:', mask)
+    # return mask
+    if batchwise:
+        mask = tf.cast(tf.math.reduce_mean(mask, axis=0) > 0.50001, dtype='float32')
+        # I have no idea why these two variations are necessary
+        if fmap_count > 3:
+            mask = tf.squeeze(mask)
+        else:
+            mask = tf.reshape(mask, (1,))
+        mask = tf.tile(mask, actual_batchsize)
+        mask = tf.reshape(mask, (-1, 1, fmap_even // 2))
+    mask_unstack = tf.unstack(mask, axis=2)
+    mask_list = []
+    for i in range(fmap_even // 2):
+        mask_list.append(mask_unstack[i])
+        mask_list.append(mask_unstack[i])
+    if fmap_even < fmap_count:
+        mask_list.append(tf.ones_like(mask_unstack[0], dtype='float32'))
+    dup_mask = tf.stack(mask_list, axis=1)
+    print('dup_mask:', dup_mask)
+    # return dup_mask
+    tiled_indices_flat = tf.tile(random_indices, actual_batchsize)
+    tiled_indices = tf.reshape(tiled_indices_flat, (-1, 1, fmap_count))
+    print('tiled_indices:', tiled_indices)
+    # return tiled_indices
+    inverse_mask_flat = tf.gather(dup_mask, tiled_indices, batch_dims=1, axis=1)
+    inverse_mask = tf.reshape(inverse_mask_flat, (-1, 1, fmap_count))
+    print('inverse_mask:', inverse_mask)
+    return inverse_mask
+    return inputs_flat * inverse_mask
 
 class Pruno2D(tf.keras.layers.Layer):
     """Applies Pruning Dropout to the input.
@@ -142,13 +196,14 @@ class Pruno2D(tf.keras.layers.Layer):
         training mode (adding dropout) or in inference mode (doing nothing).
     """
   
-    def __init__(self, similarity, batchwise=True, noise_shape=None, seed=None, **kwargs):
+    def __init__(self, similarity, batchwise=True, norm=False,seed=None, **kwargs):
         super(Pruno2D, self).__init__(**kwargs)
         if similarity < 0.0 or similarity > 1.0:
             raise ValueError('similarity must be between 0.0 and 1.0: %s' % str(similarity))
         self.similarity = similarity
         self.seed = seed
         self.batchwise = batchwise
+        self.norm = norm
         self.supports_masking = True
   
     def build(self, input_shape):
@@ -172,7 +227,10 @@ class Pruno2D(tf.keras.layers.Layer):
             input_shape = (-1, self.fmap_shape[0], self.fmap_shape[1], self.fmap_count)
             flatshape = (-1, self.fmap_shape[0] * self.fmap_shape[1], self.fmap_count)
             inputs_flatmap = tf.reshape(inputs, flatshape)
-            if self.batchwise:
+            if self.norm and self.batchwise:
+                outputs_flat = pruno_random_channels_norm_batchwise(self.similarity, self.seed, inputs_flatmap, actual_batchsize, 
+                                 self.fmap_count, self.fmap_shape[0] * self.fmap_shape[1])
+            elif self.batchwise:
                 outputs_flat = pruno_random_channels_batchwise(self.similarity, self.seed, inputs_flatmap, actual_batchsize, 
                                  self.fmap_count, self.fmap_shape[0] * self.fmap_shape[1])
             else:
@@ -192,6 +250,7 @@ class Pruno2D(tf.keras.layers.Layer):
         config = {
             'similarity': self.similarity,
             'batchwise': self.batchwise,
+            'norm': self.norm,
             'seed': self.seed
         }
         base_config = super(Pruno2D, self).get_config()
