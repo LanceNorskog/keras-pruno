@@ -97,7 +97,7 @@ def pruno_random_channels_batchwise(similarity, seed, inputs_flat, actual_batchs
     inverse_mask = tf.reshape(inverse_mask_flat, (-1, 1, fmap_count))
     return inputs_flat * inverse_mask
 
-def pruno_random_channels_norm_batchwise(similarity, seed, inputs_flat, actual_batchsize, fmap_count, fmap_size, batchwise):
+def pruno_random_channels_norm_batchwise(similarity, seed, inputs_flat, actual_batchsize, fmap_count, fmap_size, batchwise=True):
     fmap_even = (fmap_count//2)*2
     flatshape = (-1, fmap_size, fmap_count)
     indices = tf.constant(np.arange(fmap_count), dtype='int32')
