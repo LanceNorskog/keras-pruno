@@ -149,7 +149,7 @@ def pruno_random_channels_norm_batchwise(similarity, seed, inputs_flat, actual_b
     inverse_mask_flat = tf.gather(dup_mask, tiled_indices, batch_dims=1, axis=1)
     inverse_mask = tf.reshape(inverse_mask_flat, (-1, 1, fmap_count))
     print('inverse_mask:', inverse_mask)
-    return inverse_mask
+    # return inverse_mask
     return inputs_flat * inverse_mask
 
 class Pruno2D(tf.keras.layers.Layer):
