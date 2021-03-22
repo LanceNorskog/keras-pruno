@@ -217,7 +217,11 @@ class Pruno2D(tf.keras.layers.Layer):
   
     def call(self, inputs, training=None):
         if training is None:
-            training = K.learning_phase()
+            # do not activate in untrainable section of trainable model
+            if self.trainable:
+                training = K.learning_phase()
+            else:
+                training = False
         
         def identity_inputs():
             return inputs
