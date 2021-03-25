@@ -205,8 +205,6 @@ class Pruno2D(tf.keras.layers.Layer):
         self.batchwise = batchwise
         self.norm = norm
         self.supports_masking = True
-        # this is such bullshit
-        self.noise_shape = (None, 1, 1, 1)
   
     def build(self, input_shape):
         shape = input_shape.as_list()
@@ -249,6 +247,12 @@ class Pruno2D(tf.keras.layers.Layer):
                                             identity_inputs)
         return output
   
+    # why?
+    def _get_noise_shape(self, inputs):
+        input_shape = array_ops.shape(inputs)
+        noise_shape = (input_shape[0], 1, 1, 1)
+        return noise_shape
+
     def compute_output_shape(self, input_shape):
         return input_shape
   
