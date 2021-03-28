@@ -208,11 +208,9 @@ class Pruno2D(tf.keras.layers.Layer):
   
     def build(self, input_shape):
         shape = input_shape.as_list()
-        print('build:', input_shape)
         self.fmap_count = shape[3]
         self.fmap_even = (shape[3]//2)*2
         self.fmap_shape = (shape[1], shape[2])
-        print(self.fmap_count, self.fmap_even, self.fmap_shape)
         self.built = True
   
     def call(self, inputs, training=None):
