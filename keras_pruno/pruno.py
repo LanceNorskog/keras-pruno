@@ -229,9 +229,9 @@ class Pruno2D(tf.keras.layers.Layer):
             input_shape = (-1, self.fmap_shape[0], self.fmap_shape[1], self.fmap_count)
             flatshape = (-1, self.fmap_shape[0] * self.fmap_shape[1], self.fmap_count)
             inputs_flatmap = tf.reshape(inputs, flatshape)
-            if self.norm and self.batchwise:
+            if self.norm:
                 outputs_flat = pruno_random_channels_norm_batchwise(self.similarity, self.seed, inputs_flatmap, actual_batchsize, 
-                                 self.fmap_count, self.fmap_shape[0] * self.fmap_shape[1])
+                                 self.fmap_count, self.fmap_shape[0] * self.fmap_shape[1], batchwise=self.batchwise)
             elif self.batchwise:
                 outputs_flat = pruno_random_channels_batchwise(self.similarity, self.seed, inputs_flatmap, actual_batchsize, 
                                  self.fmap_count, self.fmap_shape[0] * self.fmap_shape[1])
