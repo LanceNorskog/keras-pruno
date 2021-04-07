@@ -132,6 +132,9 @@ def pruno_random_channels_norm_batchwise(similarity, seed, inputs_flat, actual_b
             mask = tf.reshape(mask, (1,))
         mask = tf.tile(mask, actual_batchsize)
         mask = tf.reshape(mask, (-1, 1, fmap_even // 2))
+        print('batchwise')
+    else:
+        print('not batchwise')
     mask_unstack = tf.unstack(mask, axis=2)
     mask_list = []
     for i in range(fmap_even // 2):
