@@ -231,9 +231,14 @@ class Pruno2D(tf.keras.layers.Layer):
             return inputs
   
         def dropped_inputs():
+            print('Pruno2D.call: type inputs.shape:', type(inputs.shape))
             print('Pruno2D.call: inputs.shape:', inputs.shape)
             print('Pruno2D.call: self.fmap_shape:', self.fmap_shape)
             actual_batchsize = tf.shape(inputs)[0:1]
+            print('actual_batchsize:', actual_batchsize)
+            self.fmap_shape[0] = tf.shape(inputs)[1:1]
+            self.smap_shape[1] = tf.shape(inputs)[2:1]
+            self.fmap_count = tf.shape(inputs)[3:1]
             input_shape = (-1, self.fmap_shape[0], self.fmap_shape[1], self.fmap_count)
             flatshape = (-1, self.fmap_shape[0] * self.fmap_shape[1], self.fmap_count)
             inputs_flatmap = tf.reshape(inputs, flatshape)
