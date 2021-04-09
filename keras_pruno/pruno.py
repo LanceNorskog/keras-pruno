@@ -218,7 +218,7 @@ class Pruno2D(tf.keras.layers.Layer):
         self.built = True
   
     def call(self, inputs, training=None):
-        print('Pruno2D.build: inputs.shape:", inputs.shape)
+        print('Pruno2D.call: inputs.shape:", inputs.shape)
         if training is None:
             # do not activate in untrainable section of trainable model
             if self.trainable:
