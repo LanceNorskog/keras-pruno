@@ -237,8 +237,7 @@ class Pruno2D(tf.keras.layers.Layer):
             print('Pruno2D.call: self.fmap_shape:', self.fmap_shape)
             actual_batchsize = tf.shape(inputs)[0:1]
             print('actual_batchsize:', actual_batchsize)
-            self.fmap_shape[0] = shape[1]
-            self.smap_shape[1] = shape[2]
+            self.fmap_shape = [shape[1], shape[2]]
             self.fmap_count = shape[3]
             input_shape = (-1, self.fmap_shape[0], self.fmap_shape[1], self.fmap_count)
             flatshape = (-1, self.fmap_shape[0] * self.fmap_shape[1], self.fmap_count)
