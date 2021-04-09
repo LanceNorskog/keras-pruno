@@ -208,6 +208,7 @@ class Pruno2D(tf.keras.layers.Layer):
         self.batchwise = batchwise
         self.norm = norm
         self.supports_masking = True
+        print('__init__: similarity:', similarity)
   
     def build(self, input_shape):
         print('Pruno2D.build: input_shape:', input_shape)
@@ -218,7 +219,6 @@ class Pruno2D(tf.keras.layers.Layer):
         self.built = True
   
     def call(self, inputs, training=None):
-        print('Pruno2D.call: inputs.shape:', inputs.shape)
         if training is None:
             # do not activate in untrainable section of trainable model
             if self.trainable:
@@ -230,6 +230,7 @@ class Pruno2D(tf.keras.layers.Layer):
             return inputs
   
         def dropped_inputs():
+            print('Pruno2D.call: inputs.shape:', inputs.shape)
             actual_batchsize = tf.shape(inputs)[0:1]
             input_shape = (-1, self.fmap_shape[0], self.fmap_shape[1], self.fmap_count)
             flatshape = (-1, self.fmap_shape[0] * self.fmap_shape[1], self.fmap_count)
