@@ -277,7 +277,7 @@ class Pruno2D(tf.keras.layers.Layer):
         base_config = super(Pruno2D, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
-    class Pruno1D(tf.keras.layers.Layer):
+class Pruno1D(tf.keras.layers.Layer):
     """Applies Pruning Dropout to the input.
     The Pruno1D layer compares randomly chosen pairs of feature maps, and sets
     both feature maps to zero when they are "too similar". Similarity is measured
