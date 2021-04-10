@@ -276,3 +276,124 @@ class Pruno2D(tf.keras.layers.Layer):
         }
         base_config = super(Pruno2D, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
+
+    class Pruno1D(tf.keras.layers.Layer):
+    """Applies Pruning Dropout to the input.
+    The Pruno1D layer compares randomly chosen pairs of feature maps, and sets
+    both feature maps to zero when they are "too similar". Similarity is measured
+    by counting the pixels in both feature maps that are greater than the mean 
+    of each feature map.
+    When using `model.fit`,
+    `training` will be appropriately set to True automatically, and in other
+    contexts, you can set the kwarg explicitly to True when calling the layer.
+    (This is in contrast to setting `trainable=False` for a Pruno layer.
+    `trainable` does not affect the layer's behavior, as Pruno does
+    not have any variables/weights that can be frozen during training.)
+    >>> layer = Pruno(.2, seed=0, input_shape=(2, 5, 2))
+    >>> data = np.arange(20).reshape(2, 5, 2).astype(np.float32)
+    >>> print(data)
+    [[[ 0.  1.]
+    [ 2.  3.]
+    [ 4.  5.]
+    [ 6.  7.]
+    [ 8.  9.]]
+  
+   [[10. 11.]
+    [12. 13.]
+    [14. 15.]
+    [16. 17.]
+    [18. 19.]]]
+    >>> outputs = layer(data, training=True)
+    >>> print(outputs)
+    tf.Tensor(
+    [[ 0.    1.25]
+     [ 2.5   3.75]
+     [ 5.    6.25]
+     [ 7.5   8.75]
+     [10.    0.  ]], shape=(5, 2), dtype=float32)
+    Arguments:
+      rate: Float between 0 and 1. 1.0 - rate = percentage of matching values 
+      which triggers a dropout event
+      seed: A Python integer to use as random seed.
+    Call arguments:
+      inputs: Input tensor (of any rank).
+      training: Python boolean indicating whether the layer should behave in
+        training mode (adding dropout) or in inference mode (doing nothing).
+    """
+  
+    def __init__(self, similarity, batchwise=True, norm=False,seed=None, **kwargs):
+        super(Pruno1D, self).__init__(**kwargs)
+        if similarity < 0.0 or similarity > 1.0:
+            raise ValueError('similarity must be between 0.0 and 1.0: %s' % str(similarity))
+        self.similarity = similarity
+        self.seed = seed
+        self.batchwise = batchwise
+        self.norm = norm
+        self.supports_masking = True
+        print('__init__: similarity:', similarity)
+  
+    def build(self, input_shape):
+        print('Pruno1D.build: input_shape:', input_shape)
+        shape = input_shape.as_list()
+        self.fmap_count = shape[2]
+        self.fmap_even = (shape[2]//2)*2
+        self.fmap_shape = (shape[1], )
+        self.built = True
+        print('Pruno1D.build: self.fmap_shape:', self.fmap_shape)
+  
+    def call(self, inputs, training=None):
+        if training is None:
+            # do not activate in untrainable section of trainable model
+            if self.trainable:
+                training = K.learning_phase()
+            else:
+                training = False
+        
+        def identity_inputs():
+            return inputs
+  
+        def dropped_inputs():
+            shape = inputs.shape.as_list()
+            print('Pruno1D.call: type inputs.shape:', type(inputs.shape))
+            print('Pruno1D.call: inputs.shape:', inputs.shape)
+            print('Pruno1D.call: self.fmap_shape:', self.fmap_shape)
+            actual_batchsize = tf.shape(inputs)[0:1]
+            print('actual_batchsize:', actual_batchsize)
+            self.fmap_shape = [shape[1]]
+            self.fmap_count = shape[2]
+            #input_shape = (-1, self.fmap_shape[0], self.fmap_count)
+            #flatshape = (-1, self.fmap_shape[0], self.fmap_count)
+            #inputs_flatmap = tf.reshape(inputs, flatshape)
+            if self.norm:
+                outputs_flat = pruno_random_channels_norm_batchwise(self.similarity, self.seed, inputs, actual_batchsize, 
+                                 self.fmap_count, self.fmap_shape[0], batchwise=self.batchwise)
+            elif self.batchwise:
+                outputs_flat = pruno_random_channels_batchwise(self.similarity, self.seed, inputs, actual_batchsize, 
+                                 self.fmap_count, self.fmap_shape[0])
+            else:
+                outputs_flat = pruno_random_channels_last(self.similarity, self.seed, inputs, actual_batchsize, 
+                                 self.fmap_count, self.fmap_shape[0])
+            return outputs
+  
+        output = smart_cond.smart_cond(training, dropped_inputs,
+                                            identity_inputs)
+        return output
+  
+    # why?
+    def _get_noise_shape(self, inputs):
+        input_shape = array_ops.shape(inputs)
+        noise_shape = (input_shape[0], 1, 1)
+        return noise_shape
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
+  
+    def get_config(self):
+        config = {
+            'similarity': self.similarity,
+            'batchwise': self.batchwise,
+            'norm': self.norm,
+            'seed': self.seed
+        }
+        base_config = super(Pruno1D, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
