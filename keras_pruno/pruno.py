@@ -365,13 +365,13 @@ class Pruno1D(tf.keras.layers.Layer):
             #flatshape = (-1, self.fmap_shape[0], self.fmap_count)
             #inputs_flatmap = tf.reshape(inputs, flatshape)
             if self.norm:
-                outputs_flat = pruno_random_channels_norm_batchwise(self.similarity, self.seed, inputs, actual_batchsize, 
+                outputs = pruno_random_channels_norm_batchwise(self.similarity, self.seed, inputs, actual_batchsize, 
                                  self.fmap_count, self.fmap_shape[0], batchwise=self.batchwise)
             elif self.batchwise:
-                outputs_flat = pruno_random_channels_batchwise(self.similarity, self.seed, inputs, actual_batchsize, 
+                outputs = pruno_random_channels_batchwise(self.similarity, self.seed, inputs, actual_batchsize, 
                                  self.fmap_count, self.fmap_shape[0])
             else:
-                outputs_flat = pruno_random_channels_last(self.similarity, self.seed, inputs, actual_batchsize, 
+                outputs = pruno_random_channels_last(self.similarity, self.seed, inputs, actual_batchsize, 
                                  self.fmap_count, self.fmap_shape[0])
             return outputs
   
