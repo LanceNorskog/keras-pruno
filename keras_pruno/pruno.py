@@ -475,9 +475,9 @@ class Pruno3D(tf.keras.layers.Layer):
   
         def dropped_inputs():
             shape = inputs.shape.as_list()
-            print('Pruno2D.call: type inputs.shape:', type(inputs.shape))
-            print('Pruno2D.call: inputs.shape:', inputs.shape)
-            print('Pruno2D.call: self.fmap_shape:', self.fmap_shape)
+            print('Pruno3D.call: type inputs.shape:', type(inputs.shape))
+            print('Pruno3D.call: inputs.shape:', inputs.shape)
+            print('Pruno3D.call: self.fmap_shape:', self.fmap_shape)
             actual_batchsize = tf.shape(inputs)[0:1]
             print('actual_batchsize:', actual_batchsize)
             self.fmap_shape = [shape[1], shape[2], shape[3]]
